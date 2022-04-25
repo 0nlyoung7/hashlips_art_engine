@@ -183,7 +183,11 @@ const loadLayerImg = async (_layer) => {
   try {
     return new Promise(async (resolve) => {
       const image = await loadImage(`${_layer.selectedElement.path}`);
-      resolve({ layer: _layer, loadedImage: image });
+      resolve({
+        layer: _layer,
+        loadedImage: image,
+        path: `${_layer.selectedElement.path}`,
+      });
     });
   } catch (error) {
     console.error("Error loading image:", error);
@@ -198,7 +202,7 @@ const addText = (_sig, x, y, size) => {
   ctx.fillText(_sig, x, y);
 };
 
-const drawElement = (_renderObject, _index, _layersLen) => {
+const drawElement = (_renderObject, _index, _layersLen, offsetX, offsetY) => {
   ctx.globalAlpha = _renderObject.layer.opacity;
   ctx.globalCompositeOperation = _renderObject.layer.blend;
   text.only
@@ -210,8 +214,8 @@ const drawElement = (_renderObject, _index, _layersLen) => {
       )
     : ctx.drawImage(
         _renderObject.loadedImage,
-        0,
-        0,
+        offsetX ? offsetX : 0,
+        offsetY ? offsetY : 0,
         format.width,
         format.height
       );
@@ -385,16 +389,32 @@ const startCreating = async () => {
           if (background.generate) {
             drawBackground();
           }
+
+          var nonWhipping = renderObjectArray.filter(function (obj) {
+            return (
+              obj.layer.name == "WHIPPING" &&
+              obj.path.indexOf("WHIPPING_00") > -1
+            );
+          });
+
           renderObjectArray.forEach((renderObject, index) => {
+            var offsetY = nonWhipping.length > 0 ? -150 : 0;
+            if (renderObject.layer.name == "BACKGROUND") {
+              offsetY = 0;
+            }
+
             drawElement(
               renderObject,
               index,
-              layerConfigurations[layerConfigIndex].layersOrder.length
+              layerConfigurations[layerConfigIndex].layersOrder.length,
+              0,
+              offsetY
             );
             if (gif.export) {
               hashlipsGiffer.add();
             }
           });
+
           if (gif.export) {
             hashlipsGiffer.stop();
           }
