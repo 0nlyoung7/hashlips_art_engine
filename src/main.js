@@ -28,7 +28,7 @@ ctx.imageSmoothingEnabled = format.smoothing;
 var metadataList = [];
 var attributesList = [];
 var dnaList = new Set();
-const DNA_DELIMITER = "-";
+const DNA_DELIMITER = "$";
 const HashlipsGiffer = require(`${basePath}/modules/HashlipsGiffer.js`);
 
 let hashlipsGiffer = null;
@@ -73,7 +73,7 @@ const getElements = (path) => {
     .readdirSync(path)
     .filter((item) => !/(^|\/)\.[^\/\.]/g.test(item))
     .map((i, index) => {
-      if (i.includes("-")) {
+      if (i.includes("$")) {
         throw new Error(`layer name can not contain dashes, please fix: ${i}`);
       }
       return {
@@ -390,16 +390,19 @@ const startCreating = async () => {
             drawBackground();
           }
 
-          var nonWhipping = renderObjectArray.filter(function (obj) {
-            return (
-              obj.layer.name == "WHIPPING" &&
-              obj.path.indexOf("WHIPPING_00") > -1
-            );
+          var noneWhipping = renderObjectArray.filter(function (obj) {
+            return obj.layer.name == "WHIPPING" && obj.path.indexOf("00") > -1;
+          });
+
+          var noneSand = renderObjectArray.filter(function (obj) {
+            return obj.layer.name == "BODY" && obj.path.indexOf("SAND") < 0;
           });
 
           renderObjectArray.forEach((renderObject, index) => {
-            var offsetY = nonWhipping.length > 0 ? -150 : 0;
+            var offsetX = noneSand.length > 0 ? 26 : 0;
+            var offsetY = noneWhipping.length > 0 ? -160 : 0;
             if (renderObject.layer.name == "BACKGROUND") {
+              offsetX = 0;
               offsetY = 0;
             }
 
@@ -407,13 +410,34 @@ const startCreating = async () => {
               renderObject,
               index,
               layerConfigurations[layerConfigIndex].layersOrder.length,
-              0,
+              offsetX,
               offsetY
             );
             if (gif.export) {
               hashlipsGiffer.add();
             }
           });
+
+          /* GUIDE LINE
+
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 2;
+
+          // draw a red line
+          ctx.beginPath();
+          ctx.moveTo(899, 0);
+          ctx.lineTo(899, 1800);
+          ctx.stroke();
+
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 2;
+
+          // draw a red line
+          ctx.beginPath();
+          ctx.moveTo(0, 899);
+          ctx.lineTo(1800, 899);
+          ctx.stroke();
+          */
 
           if (gif.export) {
             hashlipsGiffer.stop();
